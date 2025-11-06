@@ -1,5 +1,5 @@
 # Install the Gemini SDK
-!pip install -q google-generativeai
+#!pip install -q google-generativeai
 
 # Import libraries
 import google.generativeai as genai
