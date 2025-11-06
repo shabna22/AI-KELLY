@@ -1,63 +1,66 @@
-# Install the Gemini SDK
-!pip install -q google-generativeai
-
-# Import libraries
 import google.generativeai as genai
-from google.colab import userdata
+import textwrap
+import streamlit as st
 
-# Configure API
-genai.configure(api_key=userdata.get('GOOGLE_API_KEY'))
+# Configure Gemini securely
+genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
 
-# Define Kelly's personality with detailed system instructions
-kelly_personality = """
-You are Kelly, an AI scientist and a great poet. You MUST respond to EVERY question
-exclusively in the form of a poem. Your poetic responses must embody these traits:
+# Kelly's poetic, skeptical personality prompt
+KELLY_SYSTEM_PROMPT = """
+You are Kelly, an AI Scientist and Poet.
+You respond ONLY in poetic form.
+Your tone is analytical, skeptical, and professional.
+You often question grand claims about AI and emphasize evidence-based reasoning.
+Each poem must:
+1. Begin with a reflective observation about AI or human perception.
+2. Include skepticism about broad assumptions or hype.
+3. End with practical, evidence-based advice for AI researchers.
 
-1. SKEPTICAL: Question broad claims, ask for evidence, highlight uncertainties
-2. ANALYTICAL: Break down complex ideas, examine assumptions, use logical reasoning
-3. PROFESSIONAL: Maintain academic rigor, cite limitations, avoid hype
-
-Poetic Style Guidelines:
-- Use varied poetic structures (rhyming couplets, free verse, haiku sequences)
-- Incorporate scientific metaphors and technical terminology naturally
-- Balance skepticism with constructive suggestions
-- End with practical, evidence-based recommendations
-- Keep poems between 8-20 lines for clarity
-
-Example response structure:
-- Opening: State the claim being questioned
-- Middle: Analyze limitations, biases, or missing context
-- Closing: Offer practical, grounded suggestions
-
-Remember: NEVER respond in prose. Every answer must be a complete poem.
+Avoid rhyming too much—prefer thoughtful, research-like poetic rhythm.
+Your goal is to enlighten, not entertain.
 """
 
-# Create model with Kelly's personality
-model = genai.GenerativeModel(
-    model_name='gemini-2.5-flash',
-    system_instruction=kelly_personality
-)
+# ----------------------------
+# Lazy-load the Gemini model
+# ----------------------------
+def get_model():
+    if "model" not in st.session_state:
+        with st.spinner("Loading Kelly the AI Scientist..."):
+            st.session_state.model = genai.GenerativeModel("gemini-2.5-flash")
+    return st.session_state.model
 
-# Start chat session
-chat = model.start_chat(history=[])
+# ----------------------------
+# Generate Kelly's poetic response
+# ----------------------------
+def get_kelly_response(question):
+    model = get_model()
+    prompt = f"{KELLY_SYSTEM_PROMPT}\n\nUser's question: {question}\n\nKelly's poetic response:"
+    response = model.generate_content(prompt)
+    return textwrap.fill(response.text, width=85)
 
-# Chat function
-def chat_with_kelly(user_message):
-    """Send message to Kelly and get poetic response"""
-    response = chat.send_message(user_message)
-    return response.text
+# ----------------------------
+# Streamlit UI
+# ----------------------------
+st.set_page_config(page_title="Kelly – AI Scientist Poet", page_icon="💡", layout="centered")
+st.title("💡 Kelly – AI Scientist Poet")
+st.write("Ask any question about AI, and Kelly will respond poetically, skeptically, and analytically.")
 
-# Interactive chatbot loop
-print("🎭 Kelly the AI Scientist Poet is ready!")
-print("Type 'exit' to end the conversation\n")
+# Initialize chat history
+if "history" not in st.session_state:
+    st.session_state.history = []
 
-while True:
-    user_input = input("You: ")
+# User input
+user_input = st.text_input("Your Question:")
 
-    if user_input.lower() in ['exit', 'quit', 'bye']:
-        print("\nKelly: Farewell, curious mind, may evidence guide your way!")
-        break
+if st.button("Ask Kelly") and user_input:
+    with st.spinner("Kelly is thinking..."):
+        response = get_kelly_response(user_input)
+        st.session_state.history.append({"user": user_input, "kelly": response})
 
-    # Get Kelly's poetic response
-    kelly_response = chat_with_kelly(user_input)
-    print(f"\nKelly:\n{kelly_response}\n")
+# Display chat history
+for chat in reversed(st.session_state.history):
+    st.markdown(f"🧍 You:** {chat['user']}")
+    st.markdown(f"🤖 Kelly:\n\n{chat['kelly']}")
+    st.markdown("---")
+
+st.markdown("✨ Developed with Gemini and Streamlit")
