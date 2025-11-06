@@ -3,7 +3,7 @@ import textwrap
 import streamlit as st
 
 # Configure Gemini securely
-genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+genai.configure(api_key="AIzaSyDaDm9HbWx6YZIV0-bph5Cv75CowyiX2VE")
 
 # Kelly's poetic, skeptical personality prompt
 KELLY_SYSTEM_PROMPT = """
